@@ -1,4 +1,8 @@
-# NexusAcquire
+<img width="1920" height="891" alt="test 2" src="https://github.com/user-attachments/assets/18a4ff6e-d6bf-4eff-8948-a91726ab31b9" />
+<img width="1920" height="916" alt="test 1" src="https://github.com/user-attachments/assets/d5a7797c-53a4-4ffe-a0a5-45d8e4496941" />
+<img width="1920" height="893" alt="demo" src="https://github.com/user-attachments/assets/9a8116cc-a1ee-4421-99da-cee7d9e5f3df" />
+
+# GenAcquire
 
 **Universal AI-Powered Intelligent Escrow Protocol on GenLayer**
  
@@ -7,13 +11,16 @@ Built natively for the GenLayer ecosystem.
 ---
 
 ### For live testing of all contract functions, please use the official GenLayer Studio with the deployed contract address: 0x7caEB9A2313e9e178c48F8731371a03E9c64abA1
-
+https://explorer-studio.genlayer.com/address/0x7caEB9A2313e9e178c48F8731371a03E9c64abA1
+https://explorer-studio.genlayer.com/tx/0x57f58f9dbd0a236c6dac1241b045f75fd5224bdbc441183797afd57586545a7d
+https://explorer-studio.genlayer.com/tx/0xf10357170654a39493bd8f683728bf557c5aac3f3d99702aceed434abfa48727
+https://explorer-studio.genlayer.com/tx/0x27a95c066ccaad9be42c13e78388fc58b172287e4739ad772a8bda0bb77cea3f
 
 
 
 ## Overview
 
-NexusAcquire is an intelligent escrow and asset acquisition protocol that enables trust-minimized buying and selling of real-world and digital assets.  
+GenAcquire is an intelligent escrow and asset acquisition protocol that enables trust-minimized buying and selling of real-world and digital assets.  
 
 It leverages GenLayer’s unique capabilities — large language models and consensus on subjective outcomes — to automatically evaluate whether evidence provided by a seller satisfies the conditions defined by a buyer.
 
