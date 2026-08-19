@@ -1,144 +1,53 @@
-<img width="1920" height="891" alt="test 2" src="https://github.com/user-attachments/assets/18a4ff6e-d6bf-4eff-8948-a91726ab31b9" />
-<img width="1920" height="916" alt="test 1" src="https://github.com/user-attachments/assets/d5a7797c-53a4-4ffe-a0a5-45d8e4496941" />
-<img width="1920" height="893" alt="demo" src="https://github.com/user-attachments/assets/9a8116cc-a1ee-4421-99da-cee7d9e5f3df" />
+<img width="1920" height="858" alt="Screenshot (2761)" src="https://github.com/user-attachments/assets/6b65af10-981e-4582-8b0a-c810ca93e4d4" />
+<img width="1920" height="868" alt="Screenshot (2760)" src="https://github.com/user-attachments/assets/db90f6d7-9901-441f-b0eb-5548a9e4ca99" />
+<img width="1920" height="850" alt="Screenshot (2758)" src="https://github.com/user-attachments/assets/4356e4af-8bbe-435a-927b-229f052303da" />
+<img width="1920" height="901" alt="Screenshot (2756)" src="https://github.com/user-attachments/assets/51079eb0-d529-48cd-affc-e9b737891099" />
+<img width="1920" height="894" alt="Screenshot (2755)" src="https://github.com/user-attachments/assets/1cc68bba-6eac-4bf4-ac68-53c73c69b6b7" />
 
-# GenAcquire
+# NexusAcquire – Universal AI-Powered Intelligent Escrow Protocol
 
-**Universal AI-Powered Intelligent Escrow Protocol on GenLayer**
- 
-Built natively for the GenLayer ecosystem.
-
----
-
-### For live testing of all contract functions, please use the official GenLayer Studio with the deployed contract address: 0x7caEB9A2313e9e178c48F8731371a03E9c64abA1
-https://explorer-studio.genlayer.com/address/0x7caEB9A2313e9e178c48F8731371a03E9c64abA1
-https://explorer-studio.genlayer.com/tx/0x57f58f9dbd0a236c6dac1241b045f75fd5224bdbc441183797afd57586545a7d
-https://explorer-studio.genlayer.com/tx/0xf10357170654a39493bd8f683728bf557c5aac3f3d99702aceed434abfa48727
-https://explorer-studio.genlayer.com/tx/0x27a95c066ccaad9be42c13e78388fc58b172287e4739ad772a8bda0bb77cea3f
-
-
+**Contract Address (Studio):** `0x533137c492835a05a5238dE9718AbaA72dfD6CD1`
 
 ## Overview
 
-GenAcquire is an intelligent escrow and asset acquisition protocol that enables trust-minimized buying and selling of real-world and digital assets.  
+NexusAcquire is an intelligent escrow protocol built on GenLayer that enables trustless buying and selling of digital and real-world assets (GitHub repositories, documents, RWA, freelance deliverables, etc.).
 
-It leverages GenLayer’s unique capabilities — large language models and consensus on subjective outcomes — to automatically evaluate whether evidence provided by a seller satisfies the conditions defined by a buyer.
+The key innovation is that **validators judge the actual deliverable**, not just the seller’s written description.
 
-The protocol removes the need for traditional intermediaries, centralized escrow services, and human arbitrators in many types of transactions.
+### How it works
 
----
+1. Buyer locks funds and defines clear conditions.
+2. Seller submits evidence URLs (GitHub links, documents, etc.).
+3. The contract itself fetches the real content from those URLs using `gl.nondet.web.get`.
+4. An LLM under the Equivalence Principle evaluates whether the fetched content satisfies the buyer’s conditions.
+5. Funds are automatically released or refunded **on-chain** via `emit_transfer`.
 
-## Problem It Solves
+## Key Features Addressing Steward Feedback
 
-Current asset transactions (especially those involving digital goods, code, documents, and real-world assets) suffer from:
+- **Real web fetching**: The contract reads the actual content of evidence URLs (README, LICENSE, documents, etc.).
+- **Strict seller check**: Only the registered seller can call `submit()`.
+- **On-chain settlement**: Successful evaluation immediately transfers funds using `emit_transfer`.
+- Anti-fraud ownership registry to prevent double-selling.
 
-- Lack of trust between buyers and sellers
-- High fees and delays caused by intermediaries
-- Risk of fraud and double-selling the same asset
-- Difficulty verifying evidence in an unbiased and automated way
-- Prolonged capital lock-up
+## Main Functions
 
-NexusAcquire addresses these issues by combining on-chain escrow logic with GenLayer’s AI consensus mechanism.
+| Function       | Description                                      | Who can call      |
+|----------------|--------------------------------------------------|-------------------|
+| `register`     | Register ownership of an asset                   | Anyone            |
+| `create`       | Create a new escrow (payable)                    | Buyer             |
+| `submit`       | Submit evidence URLs                             | Only registered Seller |
+| `evaluate`     | Fetch real content + AI judgment + settle funds  | Anyone            |
+| `timeout`      | Refund buyer if time expires                     | Anyone            |
+| `get` / `info` | View escrow and protocol status                  | Anyone            |
 
----
+## Tested Flow
 
-## How It Works
+- Seller: `0xA1C6808b8f08D091e2826C9640Be302a310655E1`
+- Buyer: `0xaa5Eaa814bD58e5079Db20FB0826D2727c926b9E`
 
-1. **Asset Registration** (optional but recommended)  
-   The seller registers a unique asset ID in the on-chain registry.
+Full happy-path and negative tests (seller-only submit, real content evaluation) have been executed successfully on Studio.
 
-2. **Create Escrow**  
-   The buyer locks funds and defines:
-   - Asset type
-   - Unique asset ID
-   - Conditions that must be met
-   - Timeout period
+## Why this matters
 
-3. **Submit Evidence**  
-   The seller submits evidence links and an agreement statement.
-
-4. **Intelligent Evaluation**  
-   The contract uses GenLayer’s `prompt_non_comparative` equivalence principle to reach consensus on whether the evidence satisfies the stated conditions.
-
-5. **Settlement**  
-   - If approved → status becomes `RELEASED` and ownership is transferred to the buyer in the registry.  
-   - If rejected → status becomes `REFUNDED`.
-
-6. **Timeout**  
-   After the deadline, anyone can mark the escrow as `EXPIRED`.
-
----
-
-## Key Features
-
-- AI-powered evaluation using GenLayer consensus
-- On-chain ownership registry (anti-fraud / anti double-selling)
-- Configurable timeout and fee structure
-- Timelock-protected ownership transfer of the protocol
-- Pause functionality
-- Clear status lifecycle: `FUNDED` → `SUBMITTED` → `RELEASED` / `REFUNDED` / `EXPIRED`
-- Fully transparent and auditable on-chain history
-
----
-
-## Supported Asset Types
-
-- GitHub repositories & source code
-- Real estate documents
-- Vehicle titles
-- Tokenized Real-World Assets (RWA)
-- AI models and digital assets
-- Freelance deliverables
-- Any asset whose evidence can be provided via web links
-
----
-
-## Target Users
-
-- DAO treasuries
-- RWA platforms
-- Real estate and vehicle marketplaces
-- Freelancers and clients
-- Developers selling code or models
-- Any party needing reliable automated escrow
-
----
-
-## Current Status
-
-This version is fully deployable and tested on **GenLayer Studio**.
-
-Native token (ERC-20) support and automatic value transfers have been simplified for Studio compatibility. Full production-ready value transfer logic will be enabled on the live network.
-
----
-
-## Future Roadmap
-
-- Full ERC-20 and multi-token support
-- Automatic value transfers on finality
-- Multi-modal evidence evaluation (images, PDFs, etc.)
-- Simple frontend for non-technical users
-- Reputation and identity integrations
-- Dedicated marketplace built on top of the protocol
-- Cross-chain expansion
-
----
-
-## Security Highlights
-
-- Owner cannot access or seize user funds
-- On-chain registry prevents double-selling
-- Timelock for critical admin actions
-- Strict input validation
-- Pause mechanism for emergencies
-
----
-
-## License
-
-MIT
-
----
-
-**Built for the GenLayer ecosystem**  
-NexusAcquire aims to become a standard intelligent escrow layer for trust-minimized asset acquisition.
+Traditional escrows only check text descriptions.  
+NexusAcquire forces the validators to look at the **real deliverable**, making the system significantly harder to game and truly leveraging GenLayer’s unique capabilities.
