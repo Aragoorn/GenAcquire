@@ -47,23 +47,23 @@
         NexusAcquire
       </h1>
       <p class="text-slate-300 mt-3 text-lg">Universal AI-Powered Intelligent Escrow Protocol on GenLayer</p>
-      <p class="text-sm text-slate-500 mt-2">Contract: 0x7caEB9A2313e9e178c48F8731371a03E9c64abA1</p>
-      <p class="text-xs text-slate-600 mt-1">Version 4.1.5-final-testable</p>
+      <p class="text-sm text-slate-500 mt-2">Contract: 0xaE9Ab4384F056623dcAf7e814d63C5b56acdf90E</p>
+      <p class="text-xs text-slate-600 mt-1">Version 4.6 – Steward Feedback Compliant</p>
     </div>
 
     <!-- Info Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
       <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl font-bold text-indigo-300" id="nextId">-</div>
-        <div class="text-xs text-slate-400 mt-1">Next Escrow ID</div>
-      </div>
-      <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl font-bold text-green-300">1.5%</div>
+        <div class="text-2xl font-bold text-indigo-300">1.5%</div>
         <div class="text-xs text-slate-400 mt-1">Protocol Fee</div>
       </div>
       <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl font-bold text-yellow-300">Active</div>
+        <div class="text-2xl font-bold text-green-300">Active</div>
         <div class="text-xs text-slate-400 mt-1">System Status</div>
+      </div>
+      <div class="glass rounded-2xl p-5 text-center">
+        <div class="text-2xl font-bold text-yellow-300">Web Fetch</div>
+        <div class="text-xs text-slate-400 mt-1">Real Content</div>
       </div>
       <div class="glass rounded-2xl p-5 text-center">
         <div class="text-2xl font-bold text-purple-300">Studio</div>
@@ -73,85 +73,54 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      <!-- 1. Create Escrow -->
+      <!-- 1. Register Asset -->
       <div class="glass rounded-2xl p-6">
-        <h2 class="text-xl font-semibold mb-5 text-indigo-300">1. Create Escrow</h2>
-        
-        <input id="seller" class="input-field mb-3" placeholder="Seller Address" value="0x0000000000000000000000000000000000000001" />
-        <select id="assetType" class="input-field mb-3">
-          <option value="freelance">Freelance</option>
-          <option value="github">GitHub</option>
-          <option value="digital">Digital Asset</option>
-          <option value="rwa">RWA</option>
-          <option value="realestate">Real Estate</option>
-          <option value="vehicle">Vehicle</option>
-          <option value="other">Other</option>
-        </select>
-        <input id="assetId" class="input-field mb-3" placeholder="Asset ID" value="project-test-001" />
-        <textarea id="conditions" rows="3" class="input-field mb-3" placeholder="Conditions">The freelancer must deliver a complete React website with full documentation and source code</textarea>
-        <input id="days" type="number" class="input-field mb-3" placeholder="Timeout (days)" value="7" />
-        <input id="evidence" class="input-field mb-3" placeholder="Evidence URLs (optional)" />
-        <input id="meta" class="input-field mb-4" placeholder="Meta (optional)" />
-        
+        <h2 class="text-xl font-semibold mb-5 text-indigo-300">1. Register Asset (Seller)</h2>
+        <input id="registerId" class="input-field mb-4" placeholder="Asset ID" value="test-asset-001" />
+        <button onclick="copyRegister()" class="btn w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-purple-600">
+          Copy for Studio
+        </button>
+      </div>
+
+      <!-- 2. Create Escrow -->
+      <div class="glass rounded-2xl p-6">
+        <h2 class="text-xl font-semibold mb-5 text-indigo-300">2. Create Escrow (Buyer)</h2>
+        <input id="seller" class="input-field mb-3" placeholder="Seller Address" value="0xA1C6808b8f08D091e2826C9640Be302a310655E1" />
+        <input id="assetId" class="input-field mb-3" placeholder="Asset ID" value="test-asset-001" />
+        <textarea id="conditions" rows="3" class="input-field mb-3" placeholder="Conditions">The repository must contain a clear README.md file and a LICENSE file.</textarea>
+        <input id="days" type="number" class="input-field mb-4" placeholder="Timeout (days)" value="5" />
         <button onclick="copyCreate()" class="btn w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-purple-600">
-          Copy Parameters for Studio
+          Copy for Studio
         </button>
       </div>
 
-      <!-- 2. Submit Evidence -->
+      <!-- 3. Submit Evidence -->
       <div class="glass rounded-2xl p-6">
-        <h2 class="text-xl font-semibold mb-5 text-indigo-300">2. Submit Evidence</h2>
+        <h2 class="text-xl font-semibold mb-5 text-indigo-300">3. Submit Evidence (Only Seller)</h2>
         <input id="submitId" class="input-field mb-3" placeholder="Escrow ID" value="1" />
-        <textarea id="submitEvidence" rows="2" class="input-field mb-3" placeholder="Evidence URLs">https://github.com/example/project</textarea>
-        <textarea id="agreement" rows="3" class="input-field mb-4" placeholder="Agreement">I confirm that the complete React website with documentation has been delivered as requested by the buyer.</textarea>
-        
+        <textarea id="submitEvidence" rows="2" class="input-field mb-4" placeholder="Evidence URLs">https://github.com/genlayerlabs/genlayer-project-boilerplate</textarea>
         <button onclick="copySubmit()" class="btn w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-indigo-500 to-purple-600">
-          Copy Parameters for Studio
+          Copy for Studio
         </button>
       </div>
 
-      <!-- 3. Evaluate -->
+      <!-- 4. Evaluate -->
       <div class="glass rounded-2xl p-6">
-        <h2 class="text-xl font-semibold mb-5 text-green-300">3. Evaluate with AI</h2>
+        <h2 class="text-xl font-semibold mb-5 text-green-300">4. Evaluate with AI</h2>
         <input id="evaluateId" class="input-field mb-4" placeholder="Escrow ID" value="1" />
         <button onclick="copyEvaluate()" class="btn w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-emerald-600">
-          Copy Parameters for Studio
+          Copy for Studio
         </button>
-        <p class="text-xs text-slate-500 mt-3 text-center">This method may take 30–90 seconds</p>
+        <p class="text-xs text-slate-500 mt-3 text-center">May take 30–90 seconds (real web fetching)</p>
       </div>
 
-      <!-- 4. Get Escrow -->
-      <div class="glass rounded-2xl p-6">
-        <h2 class="text-xl font-semibold mb-5 text-blue-300">4. View Escrow</h2>
+      <!-- 5. Get Escrow -->
+      <div class="glass rounded-2xl p-6 lg:col-span-2">
+        <h2 class="text-xl font-semibold mb-5 text-blue-300">5. View Escrow Result</h2>
         <input id="getId" class="input-field mb-4" placeholder="Escrow ID" value="1" />
         <button onclick="copyGet()" class="btn w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-cyan-600">
-          Copy Parameters for Studio
+          Copy for Studio
         </button>
-      </div>
-
-      <!-- Extra Actions -->
-      <div class="glass rounded-2xl p-6 lg:col-span-2">
-        <h2 class="text-xl font-semibold mb-5">Additional Actions</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <input id="registerId" class="input-field mb-3" placeholder="Asset ID to register" />
-            <button onclick="copyRegister()" class="btn w-full py-2.5 rounded-xl text-sm font-medium bg-white/10">
-              Register Asset
-            </button>
-          </div>
-          <div>
-            <input id="ownerOfId" class="input-field mb-3" placeholder="Asset ID" />
-            <button onclick="copyOwnerOf()" class="btn w-full py-2.5 rounded-xl text-sm font-medium bg-white/10">
-              Check Owner
-            </button>
-          </div>
-          <div>
-            <input id="timeoutId" class="input-field mb-3" placeholder="Escrow ID" />
-            <button onclick="copyTimeout()" class="btn w-full py-2.5 rounded-xl text-sm font-medium bg-white/10">
-              Trigger Timeout
-            </button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -160,42 +129,41 @@
       <h3 class="font-semibold text-lg mb-3">How to Test (for Reviewers)</h3>
       <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
         <li>Open <a href="https://studio.genlayer.com" target="_blank" class="text-indigo-400 underline">GenLayer Studio</a></li>
-        <li>Load the contract at address <code class="bg-black/40 px-1 rounded">0x7caEB9A2313e9e178c48F8731371a03E9c64abA1</code></li>
+        <li>Load the contract: <code class="bg-black/40 px-1 rounded">0xaE9Ab4384F056623dcAf7e814d63C5b56acdf90E</code></li>
         <li>Use the buttons above to copy ready-to-use parameters</li>
-        <li>Execute the methods in order: <strong>create → submit → evaluate → get</strong></li>
+        <li>Execute in order: <strong>register → create → submit → evaluate → get</strong></li>
+        <li>Important: Only the seller can call submit()</li>
       </ol>
     </div>
 
     <div class="text-center mt-10 text-xs text-slate-600">
-      NexusAcquire • Built for GenLayer Builders Program • Enterprise Intelligent Escrow
+      NexusAcquire • Built for GenLayer Builders Program • Real Web Fetching + On-chain Settlement
     </div>
   </div>
 
   <script>
-    const CONTRACT = "0x7caEB9A2313e9e178c48F8731371a03E9c64abA1";
-
     function copyText(text) {
       navigator.clipboard.writeText(text).then(() => {
         alert("Parameters copied! Paste them in GenLayer Studio.");
       });
     }
 
+    function copyRegister() {
+      copyText(`asset_id: ${document.getElementById('registerId').value}`);
+    }
+
     function copyCreate() {
       const text = `seller: ${document.getElementById('seller').value}
-asset_type: ${document.getElementById('assetType').value}
 asset_id: ${document.getElementById('assetId').value}
 conditions: ${document.getElementById('conditions').value}
 days: ${document.getElementById('days').value}
-evidence: ${document.getElementById('evidence').value}
-meta: ${document.getElementById('meta').value}
 Value: 0`;
       copyText(text);
     }
 
     function copySubmit() {
       const text = `escrow_id: ${document.getElementById('submitId').value}
-evidence_urls: ${document.getElementById('submitEvidence').value}
-agreement: ${document.getElementById('agreement').value}`;
+evidence_urls: ${document.getElementById('submitEvidence').value}`;
       copyText(text);
     }
 
@@ -205,18 +173,6 @@ agreement: ${document.getElementById('agreement').value}`;
 
     function copyGet() {
       copyText(`escrow_id: ${document.getElementById('getId').value}`);
-    }
-
-    function copyRegister() {
-      copyText(`asset_id: ${document.getElementById('registerId').value}`);
-    }
-
-    function copyOwnerOf() {
-      copyText(`asset_id: ${document.getElementById('ownerOfId').value}`);
-    }
-
-    function copyTimeout() {
-      copyText(`escrow_id: ${document.getElementById('timeoutId').value}`);
     }
   </script>
 </body>
