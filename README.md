@@ -7,6 +7,9 @@
 # NexusAcquire – Universal AI-Powered Intelligent Escrow Protocol
 
 **Contract Address (Studio):** `0x533137c492835a05a5238dE9718AbaA72dfD6CD1`
+## live demo : https://dapper-cascaron-8b0c9b.netlify.app/
+
+https://explorer-studio.genlayer.com/address/0x533137c492835a05a5238dE9718AbaA72dfD6CD1
 
 ## Overview
 
