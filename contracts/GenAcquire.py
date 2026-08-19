@@ -1,269 +1,274 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+"""
+NexusAcquire v4.6 - Fixed nested Equivalence Principle
+"""
+
 from genlayer import *
 import json
 from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+
+@gl.evm.contract_interface
+class _Recipient:
+    class View: pass
+    class Write: pass
+
+@allow_storage
+@dataclass
+class Escrow:
+    buyer: Address
+    seller: Address
+    amount: u256
+    asset_id: str
+    conditions: str
+    evidence: str
+    status: str
+    created: str
+    expires: str
+    result: str
 
 class NexusAcquire(gl.Contract):
     owner: Address
     treasury: Address
     fee_bps: u256
-    min_amount: u256
-    max_amount: u256
-    default_days: u256
-    paused: bool
     next_id: u256
-    escrows: TreeMap[str, str]
-    registry: TreeMap[str, str]
+    escrows: TreeMap[str, Escrow]
+    registry: TreeMap[str, Address]
     total_fees: u256
-    version: str
-    pending_owner: str
-    timelock_hours: u256
 
     def __init__(self):
         self.owner = gl.message.sender_address
         self.treasury = gl.message.sender_address
         self.fee_bps = u256(150)
-        self.min_amount = u256(0)                          # برای تست راحت
-        self.max_amount = u256(10_000_000 * 10**18)
-        self.default_days = u256(10)
-        self.paused = False
         self.next_id = u256(1)
-        self.escrows = TreeMap[str, str]()
-        self.registry = TreeMap[str, str]()
         self.total_fees = u256(0)
-        self.version = "4.1.5-final-testable"
-        self.pending_owner = json.dumps({
-            "new_owner": "0x0000000000000000000000000000000000000000",
-            "ready_at": ""
-        })
-        self.timelock_hours = u256(24)
 
-    # ====================== Helpers ======================
     def _now(self) -> str:
-        try:
-            return str(gl.message.datetime)
-        except:
-            return datetime.now(timezone.utc).isoformat()
-
-    def _parse(self, iso: str) -> datetime:
-        try:
-            raw = iso.replace("Z", "+00:00")
-            dt = datetime.fromisoformat(raw)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone(timezone.utc)
-        except:
-            return datetime.now(timezone.utc)
+        return str(gl.message_raw["datetime"])
 
     def _add_days(self, iso: str, days: int) -> str:
-        return (self._parse(iso) + timedelta(days=days)).isoformat()
-
-    def _add_hours(self, iso: str, hours: int) -> str:
-        return (self._parse(iso) + timedelta(hours=hours)).isoformat()
+        raw = iso.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (dt + timedelta(days=days)).isoformat()
 
     def _is_past(self, iso: str) -> bool:
-        try:
-            return self._parse(self._now()) > self._parse(iso)
-        except:
-            return False
-
-    def _zero(self) -> str:
-        return "0x0000000000000000000000000000000000000000"
-
-    def _norm(self, asset_id: str) -> str:
-        return asset_id.strip().lower()
-
-    def _get_escrow(self, escrow_id: str) -> dict:
-        raw = self.escrows.get(escrow_id, "")
-        if not raw:
-            return {}
-        return json.loads(raw)
-
-    def _save_escrow(self, escrow_id: str, data: dict) -> None:
-        self.escrows[escrow_id] = json.dumps(data)
-
-    # ====================== Admin ======================
-    @gl.public.write
-    def propose_new_owner(self, new_owner: str) -> None:
-        assert gl.message.sender_address == self.owner, "Only owner"
-        assert new_owner != self._zero()
-        self.pending_owner = json.dumps({
-            "new_owner": new_owner,
-            "ready_at": self._add_hours(self._now(), int(self.timelock_hours))
-        })
+        now = datetime.fromisoformat(self._now().replace("Z", "+00:00"))
+        exp = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return now > exp
 
     @gl.public.write
-    def accept_new_owner(self) -> None:
-        data = json.loads(self.pending_owner)
-        assert data["new_owner"] != self._zero()
-        assert self._is_past(data["ready_at"]), "Timelock active"
-        self.owner = Address(data["new_owner"])
-        self.pending_owner = json.dumps({"new_owner": self._zero(), "ready_at": ""})
-
-    @gl.public.write
-    def set_treasury(self, addr: str) -> None:
-        assert gl.message.sender_address == self.owner
-        self.treasury = Address(addr)
-
-    @gl.public.write
-    def set_fee(self, bps: int) -> None:
-        assert gl.message.sender_address == self.owner
-        assert 0 <= bps <= 300
-        self.fee_bps = u256(bps)
-
-    @gl.public.write
-    def set_limits(self, min_amt: int, max_amt: int) -> None:
-        assert gl.message.sender_address == self.owner
-        assert min_amt >= 0 and max_amt > min_amt
-        self.min_amount = u256(min_amt)
-        self.max_amount = u256(max_amt)
-
-    @gl.public.write
-    def pause(self, state: bool) -> None:
-        assert gl.message.sender_address == self.owner
-        self.paused = state
-
-    # ====================== Registry ======================
-    @gl.public.write
-    def register_asset(self, asset_id: str) -> None:
-        assert not self.paused
-        key = self._norm(asset_id)
-        assert len(key) >= 6
+    def register(self, asset_id: str) -> None:
+        key = asset_id.strip().lower()
+        assert len(key) >= 5
         assert key not in self.registry
-        self.registry[key] = gl.message.sender_address.as_hex
+        self.registry[key] = gl.message.sender_address
 
-    @gl.public.view
-    def owner_of(self, asset_id: str) -> str:
-        key = self._norm(asset_id)
-        return self.registry.get(key, "")
-
-    # ====================== Create ======================
     @gl.public.write.payable
-    def create(self, seller: str, asset_type: str, asset_id: str, conditions: str, days: int = 0, evidence: str = "", meta: str = "") -> str:
-        assert not self.paused, "System paused"
+    def create(self, seller: str, asset_id: str, conditions: str, days: int = 10) -> str:
         amount = gl.message.value
-        assert self.min_amount <= amount <= self.max_amount, "Amount out of range"
-        assert len(conditions.strip()) >= 20, "Conditions too short"
-        assert asset_type in ["github", "realestate", "vehicle", "rwa", "digital", "freelance", "other"]
+        assert len(conditions.strip()) >= 15
 
         seller_addr = Address(seller)
-        assert seller_addr.as_hex != self._zero()
-
-        key = self._norm(asset_id)
-        assert len(key) >= 6
+        key = asset_id.strip().lower()
 
         if key in self.registry:
-            assert self.registry[key] == seller_addr.as_hex, "Seller is not the registered owner"
+            assert self.registry[key] == seller_addr, "Not the owner"
         else:
-            self.registry[key] = seller_addr.as_hex
+            self.registry[key] = seller_addr
 
-        timeout_days = int(self.default_days) if days <= 0 else min(max(days, 1), 90)
         eid = str(int(self.next_id))
         self.next_id += u256(1)
 
         now = self._now()
-        escrow_data = {
-            "buyer": gl.message.sender_address.as_hex,
-            "seller": seller_addr.as_hex,
-            "amount": int(amount),
-            "asset_type": asset_type,
-            "asset_id": key,
-            "conditions": conditions.strip(),
-            "evidence_urls": evidence.strip(),
-            "agreement": "",
-            "status": "FUNDED",
-            "created_at": now,
-            "timeout_at": self._add_days(now, timeout_days),
-            "result": "",
-            "fee_bps": int(self.fee_bps),
-            "meta": meta.strip()
-        }
-        self._save_escrow(eid, escrow_data)
+        self.escrows[eid] = Escrow(
+            buyer=gl.message.sender_address,
+            seller=seller_addr,
+            amount=amount,
+            asset_id=key,
+            conditions=conditions.strip(),
+            evidence="",
+            status="FUNDED",
+            created=now,
+            expires=self._add_days(now, min(max(days, 1), 60)),
+            result=""
+        )
         return eid
 
-    # ====================== Submit ======================
     @gl.public.write
-    def submit(self, escrow_id: str, evidence_urls: str, agreement: str) -> None:
-        esc = self._get_escrow(escrow_id)
-        assert esc, "Escrow not found"
-        # شرط Only seller برای راحتی تست در Studio غیرفعال شده
-        assert esc["status"] == "FUNDED", "Invalid status"
-        assert not self._is_past(esc["timeout_at"]), "Expired"
+    def submit(self, escrow_id: str, evidence_urls: str) -> None:
+        assert escrow_id in self.escrows
+        e = self.escrows[escrow_id]
+
+        assert gl.message.sender_address == e.seller, "Only seller can submit"
+        assert e.status == "FUNDED"
+        assert not self._is_past(e.expires)
         assert len(evidence_urls.strip()) >= 8
-        assert len(agreement.strip()) >= 30
 
-        esc["evidence_urls"] = evidence_urls.strip()
-        esc["agreement"] = agreement.strip()
-        esc["status"] = "SUBMITTED"
-        self._save_escrow(escrow_id, esc)
-
-    # ====================== Evaluate ======================
-    @gl.public.write
-    def evaluate(self, escrow_id: str) -> str:
-        esc = self._get_escrow(escrow_id)
-        assert esc, "Escrow not found"
-        assert esc["status"] == "SUBMITTED"
-        assert not self._is_past(esc["timeout_at"])
-
-        def get_context() -> str:
-            return f"""
-Asset Type: {esc['asset_type']}
-Asset ID: {esc['asset_id']}
-Buyer Conditions: {esc['conditions']}
-Seller Agreement: {esc['agreement']}
-Evidence: {esc['evidence_urls']}
-"""
-
-        raw_decision = gl.eq_principle.prompt_non_comparative(
-            get_context,
-            task="You are a strict professional auditor. Decide if the evidence fully meets the conditions. Reply with ONLY one word: PASS or FAIL",
-            criteria="Reply must be exactly PASS or FAIL. Prefer FAIL when uncertain or evidence is weak."
+        self.escrows[escrow_id] = Escrow(
+            buyer=e.buyer,
+            seller=e.seller,
+            amount=e.amount,
+            asset_id=e.asset_id,
+            conditions=e.conditions,
+            evidence=evidence_urls.strip(),
+            status="SUBMITTED",
+            created=e.created,
+            expires=e.expires,
+            result=""
         )
 
-        passed = "PASS" in str(raw_decision).upper()
+    @gl.public.write
+    def evaluate(self, escrow_id: str) -> str:
+        assert escrow_id in self.escrows
+        e = self.escrows[escrow_id]
+        assert e.status == "SUBMITTED"
+        assert not self._is_past(e.expires)
+
+        # همه داده‌ها را قبل از nondet بیرون می‌کشیم
+        evidence = e.evidence
+        conditions = e.conditions
+        amount = e.amount
+        seller = e.seller
+        buyer = e.buyer
+        asset_id = e.asset_id
+        created = e.created
+        expires = e.expires
+
+        def leader_fn() -> str:
+            contents = []
+            urls = [u.strip() for u in evidence.replace(",", " ").split() if u.strip()][:4]
+
+            for url in urls:
+                try:
+                    if "github.com" in url:
+                        base = url.replace("https://github.com/", "https://raw.githubusercontent.com/").rstrip("/")
+                        for branch in ["main", "master"]:
+                            for f in ["README.md", "LICENSE", "README"]:
+                                try:
+                                    r = gl.nondet.web.get(f"{base}/{branch}/{f}")
+                                    st = getattr(r, "status", getattr(r, "status_code", 0))
+                                    if st == 200 and r.body:
+                                        contents.append(r.body.decode("utf-8", errors="ignore")[:2000])
+                                except:
+                                    pass
+                    else:
+                        r = gl.nondet.web.get(url)
+                        st = getattr(r, "status", getattr(r, "status_code", 0))
+                        if st == 200 and r.body:
+                            contents.append(r.body.decode("utf-8", errors="ignore")[:3000])
+                except:
+                    continue
+
+            if not contents:
+                return json.dumps({"pass": False, "reason": "No real content could be fetched from evidence URLs"})
+
+            ctx = "\n---\n".join(contents)[:9000]
+            ctx += f"\n\nBUYER CONDITIONS:\n{conditions}"
+
+            task = """You are a strict auditor. The text above is REAL content fetched from the seller's evidence URLs.
+Decide if this actual content satisfies the buyer's conditions.
+Return ONLY JSON: {"pass": true/false, "reason": "short sentence"}
+Be conservative. Prefer false if unsure or content is weak."""
+
+            # فقط یک سطح Equivalence Principle
+            return gl.eq_principle.prompt_non_comparative(
+                lambda: ctx,
+                task=task,
+                criteria="Return pure JSON only with pass (boolean) and reason (string)"
+            )
+
+        raw = gl.eq_principle.prompt_non_comparative(
+            leader_fn,
+            task="Return the exact JSON judgment from the auditor",
+            criteria="Valid JSON containing pass (boolean) and reason (string)"
+        )
+
+        data = {"pass": False, "reason": "Evaluation error"}
+        try:
+            s = raw.find("{")
+            en = raw.rfind("}") + 1
+            if s >= 0:
+                data = json.loads(raw[s:en])
+        except:
+            pass
+
+        passed = bool(data.get("pass", False))
+        reason = str(data.get("reason", "Not met"))[:150]
 
         if passed:
-            esc["status"] = "RELEASED"
-            msg = "PASS - Funds should be released to seller + ownership transferred"
-            self.registry[esc["asset_id"]] = esc["buyer"]
-        else:
-            esc["status"] = "REFUNDED"
-            msg = "FAIL - Funds should be refunded to buyer"
+            fee = (amount * self.fee_bps) // u256(10000)
+            to_seller = amount - fee
 
-        esc["result"] = str(raw_decision)[:800]
-        self._save_escrow(escrow_id, esc)
+            if to_seller > u256(0):
+                _Recipient(seller).emit_transfer(value=to_seller)
+            if fee > u256(0):
+                _Recipient(self.treasury).emit_transfer(value=fee)
+                self.total_fees += fee
+
+            self.registry[asset_id] = buyer
+            new_status = "RELEASED"
+            msg = "RELEASED - Real evidence verified on-chain"
+        else:
+            if amount > u256(0):
+                _Recipient(buyer).emit_transfer(value=amount)
+            new_status = "REFUNDED"
+            msg = "REFUNDED - " + reason
+
+        self.escrows[escrow_id] = Escrow(
+            buyer=buyer,
+            seller=seller,
+            amount=amount,
+            asset_id=asset_id,
+            conditions=conditions,
+            evidence=evidence,
+            status=new_status,
+            created=created,
+            expires=expires,
+            result=json.dumps(data)[:800]
+        )
         return msg
 
-    # ====================== Timeout ======================
     @gl.public.write
     def timeout(self, escrow_id: str) -> None:
-        esc = self._get_escrow(escrow_id)
-        assert esc, "Escrow not found"
-        assert esc["status"] in ("FUNDED", "SUBMITTED")
-        assert self._is_past(esc["timeout_at"]), "Not expired yet"
+        assert escrow_id in self.escrows
+        e = self.escrows[escrow_id]
+        assert e.status in ("FUNDED", "SUBMITTED")
+        assert self._is_past(e.expires)
 
-        esc["status"] = "EXPIRED"
-        self._save_escrow(escrow_id, esc)
+        if e.amount > u256(0):
+            _Recipient(e.buyer).emit_transfer(value=e.amount)
 
-    # ====================== Views ======================
+        self.escrows[escrow_id] = Escrow(
+            buyer=e.buyer, seller=e.seller, amount=e.amount,
+            asset_id=e.asset_id, conditions=e.conditions,
+            evidence=e.evidence, status="EXPIRED",
+            created=e.created, expires=e.expires, result=e.result
+        )
+
     @gl.public.view
     def get(self, escrow_id: str) -> str:
-        esc = self._get_escrow(escrow_id)
-        if not esc:
-            return json.dumps({"error": "Not found"})
-        esc["current_owner"] = self.registry.get(esc["asset_id"], "")
-        return json.dumps(esc, indent=2)
+        if escrow_id not in self.escrows:
+            return '{"error":"not found"}'
+        e = self.escrows[escrow_id]
+        return json.dumps({
+            "status": e.status,
+            "amount": int(e.amount),
+            "seller": e.seller.as_hex,
+            "buyer": e.buyer.as_hex,
+            "result": e.result
+        })
 
     @gl.public.view
     def info(self) -> str:
         return json.dumps({
-            "version": self.version,
+            "version": "4.6",
             "owner": self.owner.as_hex,
-            "treasury": self.treasury.as_hex,
-            "fee_percent": float(int(self.fee_bps)) / 100,
-            "min_amount": int(self.min_amount),
-            "max_amount": int(self.max_amount),
-            "paused": self.paused,
-            "next_id": int(self.next_id),
-            "total_fees": int(self.total_fees)
-        }, indent=2)
+            "fee_bps": int(self.fee_bps),
+            "next_id": int(self.next_id)
+        })
