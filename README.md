@@ -1,7 +1,6 @@
 # GensAcquire – Universal AI-Powered Intelligent Escrow Protocol
 
 **Contract Address (Studio):** `0xd96dD4E6491d022334D3B7D301029d40b4795157`
-## live demo : https://dapper-cascaron-8b0c9b.netlify.app/
 
 https://explorer-studio.genlayer.com/address/0xd96dD4E6491d022334D3B7D301029d40b4795157
 
