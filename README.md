@@ -1,15 +1,9 @@
-<img width="1920" height="858" alt="Screenshot (2761)" src="https://github.com/user-attachments/assets/6b65af10-981e-4582-8b0a-c810ca93e4d4" />
-<img width="1920" height="868" alt="Screenshot (2760)" src="https://github.com/user-attachments/assets/db90f6d7-9901-441f-b0eb-5548a9e4ca99" />
-<img width="1920" height="850" alt="Screenshot (2758)" src="https://github.com/user-attachments/assets/4356e4af-8bbe-435a-927b-229f052303da" />
-<img width="1920" height="901" alt="Screenshot (2756)" src="https://github.com/user-attachments/assets/51079eb0-d529-48cd-affc-e9b737891099" />
-<img width="1920" height="894" alt="Screenshot (2755)" src="https://github.com/user-attachments/assets/1cc68bba-6eac-4bf4-ac68-53c73c69b6b7" />
+# GensAcquire – Universal AI-Powered Intelligent Escrow Protocol
 
-# NexusAcquire – Universal AI-Powered Intelligent Escrow Protocol
-
-**Contract Address (Studio):** `0x533137c492835a05a5238dE9718AbaA72dfD6CD1`
+**Contract Address (Studio):** `0xd96dD4E6491d022334D3B7D301029d40b4795157`
 ## live demo : https://dapper-cascaron-8b0c9b.netlify.app/
 
-https://explorer-studio.genlayer.com/address/0x533137c492835a05a5238dE9718AbaA72dfD6CD1
+https://explorer-studio.genlayer.com/address/0xd96dD4E6491d022334D3B7D301029d40b4795157
 
 ## Overview
 
