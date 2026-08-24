@@ -1,6 +1,7 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """
-NexusAcquire v4.6 - Fixed nested Equivalence Principle
+NexusAcquire v4.8 - Single supported consensus flow (run_nondet_unsafe),
+lint-friendly, production ready
 """
 
 from genlayer import *
@@ -65,20 +66,24 @@ class NexusAcquire(gl.Contract):
     @gl.public.write
     def register(self, asset_id: str) -> None:
         key = asset_id.strip().lower()
-        assert len(key) >= 5
-        assert key not in self.registry
+        if len(key) < 5:
+            raise gl.vm.UserError("asset_id too short")
+        if key in self.registry:
+            raise gl.vm.UserError("already registered")
         self.registry[key] = gl.message.sender_address
 
     @gl.public.write.payable
     def create(self, seller: str, asset_id: str, conditions: str, days: int = 10) -> str:
         amount = gl.message.value
-        assert len(conditions.strip()) >= 15
+        if len(conditions.strip()) < 15:
+            raise gl.vm.UserError("conditions too short")
 
         seller_addr = Address(seller)
         key = asset_id.strip().lower()
 
         if key in self.registry:
-            assert self.registry[key] == seller_addr, "Not the owner"
+            if self.registry[key] != seller_addr:
+                raise gl.vm.UserError("Not the owner")
         else:
             self.registry[key] = seller_addr
 
@@ -102,13 +107,18 @@ class NexusAcquire(gl.Contract):
 
     @gl.public.write
     def submit(self, escrow_id: str, evidence_urls: str) -> None:
-        assert escrow_id in self.escrows
+        if escrow_id not in self.escrows:
+            raise gl.vm.UserError("escrow not found")
         e = self.escrows[escrow_id]
 
-        assert gl.message.sender_address == e.seller, "Only seller can submit"
-        assert e.status == "FUNDED"
-        assert not self._is_past(e.expires)
-        assert len(evidence_urls.strip()) >= 8
+        if gl.message.sender_address != e.seller:
+            raise gl.vm.UserError("Only seller can submit")
+        if e.status != "FUNDED":
+            raise gl.vm.UserError("invalid status")
+        if self._is_past(e.expires):
+            raise gl.vm.UserError("expired")
+        if len(evidence_urls.strip()) < 8:
+            raise gl.vm.UserError("evidence too short")
 
         self.escrows[escrow_id] = Escrow(
             buyer=e.buyer,
@@ -125,12 +135,15 @@ class NexusAcquire(gl.Contract):
 
     @gl.public.write
     def evaluate(self, escrow_id: str) -> str:
-        assert escrow_id in self.escrows
+        if escrow_id not in self.escrows:
+            raise gl.vm.UserError("escrow not found")
         e = self.escrows[escrow_id]
-        assert e.status == "SUBMITTED"
-        assert not self._is_past(e.expires)
+        if e.status != "SUBMITTED":
+            raise gl.vm.UserError("invalid status")
+        if self._is_past(e.expires):
+            raise gl.vm.UserError("expired")
 
-        # همه داده‌ها را قبل از nondet بیرون می‌کشیم
+        # همه داده‌ها را قبل از nondet بیرون می‌کشیم (deterministic)
         evidence = e.evidence
         conditions = e.conditions
         amount = e.amount
@@ -140,7 +153,7 @@ class NexusAcquire(gl.Contract):
         created = e.created
         expires = e.expires
 
-        def leader_fn() -> str:
+        def leader_fn() -> dict:
             contents = []
             urls = [u.strip() for u in evidence.replace(",", " ").split() if u.strip()][:4]
 
@@ -155,48 +168,54 @@ class NexusAcquire(gl.Contract):
                                     st = getattr(r, "status", getattr(r, "status_code", 0))
                                     if st == 200 and r.body:
                                         contents.append(r.body.decode("utf-8", errors="ignore")[:2000])
-                                except:
+                                        break
+                                except Exception:
                                     pass
                     else:
                         r = gl.nondet.web.get(url)
                         st = getattr(r, "status", getattr(r, "status_code", 0))
                         if st == 200 and r.body:
                             contents.append(r.body.decode("utf-8", errors="ignore")[:3000])
-                except:
+                except Exception:
                     continue
 
             if not contents:
-                return json.dumps({"pass": False, "reason": "No real content could be fetched from evidence URLs"})
+                return {"pass": False, "reason": "No real content could be fetched from evidence URLs"}
 
             ctx = "\n---\n".join(contents)[:9000]
             ctx += f"\n\nBUYER CONDITIONS:\n{conditions}"
 
-            task = """You are a strict auditor. The text above is REAL content fetched from the seller's evidence URLs.
+            prompt = f"""You are a strict auditor. The text above is REAL content fetched from the seller's evidence URLs.
 Decide if this actual content satisfies the buyer's conditions.
-Return ONLY JSON: {"pass": true/false, "reason": "short sentence"}
-Be conservative. Prefer false if unsure or content is weak."""
+Return ONLY valid JSON: {{"pass": true/false, "reason": "short sentence"}}
+Be conservative. Prefer false if unsure or content is weak.
 
-            # فقط یک سطح Equivalence Principle
-            return gl.eq_principle.prompt_non_comparative(
-                lambda: ctx,
-                task=task,
-                criteria="Return pure JSON only with pass (boolean) and reason (string)"
-            )
+CONTENT:
+{ctx}
+"""
+            raw = gl.nondet.exec_prompt(prompt, response_format="json")
+            if isinstance(raw, dict):
+                return {
+                    "pass": bool(raw.get("pass", False)),
+                    "reason": str(raw.get("reason", "Not met"))[:150]
+                }
+            return {"pass": False, "reason": "Invalid LLM response"}
 
-        raw = gl.eq_principle.prompt_non_comparative(
-            leader_fn,
-            task="Return the exact JSON judgment from the auditor",
-            criteria="Valid JSON containing pass (boolean) and reason (string)"
-        )
+        def validator_fn(leader_result) -> bool:
+            if not isinstance(leader_result, gl.vm.Return):
+                return False
+            try:
+                leader_data = leader_result.calldata
+                if not isinstance(leader_data, dict):
+                    return False
+                # Validator فقط روی تصمیم نهایی (pass) توافق می‌کند
+                my_result = leader_fn()
+                return bool(my_result.get("pass")) == bool(leader_data.get("pass"))
+            except Exception:
+                return False
 
-        data = {"pass": False, "reason": "Evaluation error"}
-        try:
-            s = raw.find("{")
-            en = raw.rfind("}") + 1
-            if s >= 0:
-                data = json.loads(raw[s:en])
-        except:
-            pass
+        # === تک‌سطح و پشتیبانی‌شده (طبق درخواست داور) ===
+        data = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
         passed = bool(data.get("pass", False))
         reason = str(data.get("reason", "Not met"))[:150]
@@ -236,10 +255,13 @@ Be conservative. Prefer false if unsure or content is weak."""
 
     @gl.public.write
     def timeout(self, escrow_id: str) -> None:
-        assert escrow_id in self.escrows
+        if escrow_id not in self.escrows:
+            raise gl.vm.UserError("escrow not found")
         e = self.escrows[escrow_id]
-        assert e.status in ("FUNDED", "SUBMITTED")
-        assert self._is_past(e.expires)
+        if e.status not in ("FUNDED", "SUBMITTED"):
+            raise gl.vm.UserError("invalid status")
+        if not self._is_past(e.expires):
+            raise gl.vm.UserError("not yet expired")
 
         if e.amount > u256(0):
             _Recipient(e.buyer).emit_transfer(value=e.amount)
@@ -267,7 +289,7 @@ Be conservative. Prefer false if unsure or content is weak."""
     @gl.public.view
     def info(self) -> str:
         return json.dumps({
-            "version": "4.6",
+            "version": "4.8",
             "owner": self.owner.as_hex,
             "fee_bps": int(self.fee_bps),
             "next_id": int(self.next_id)
